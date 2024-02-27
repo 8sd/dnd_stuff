@@ -10,7 +10,7 @@ module field () {
             translate([0,0,-0.1])
                 cylinder(d = rfield - sfield, h = dfield + 0.2, $fn = 6);
         }
-        translate([0,0, dfield-dconnector]) connector_w();
+        translate([0,0, dfield]) rotate([180,0,0]) connector_w();
     }
 }
 
@@ -22,6 +22,17 @@ module field_connector() {
                 cylinder(d = rfield - mify(sfield), h = mify(dfield) + 0.2, $fn = 6);
         }
         translate([0, -rfield, 0]) cube([rfield, 2*rfield, mify(dfield)]);
+    }
+}
+
+module field_connector_w() {
+    intersection() {
+        difference() {
+            cylinder(d = rfield + sfield, h = dfield, $fn = 6);
+            translate([0,0,-0.1])
+                cylinder(d = rfield - sfield, h = dfield + 0.2, $fn = 6);
+        }
+        translate([0, -rfield, 0]) cube([rfield, 2*rfield, dfield]);
     }
 }
 
@@ -42,5 +53,8 @@ module arena (x, y) {
     }
 }
 
-//arena(5,5);
+//arena(1,1);
 //translate([0,0,-1]) color("red") cube([arena_size_x(5), arena_size_y(5), 1]);
+
+
+//field_connector();
