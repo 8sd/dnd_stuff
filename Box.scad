@@ -1,10 +1,14 @@
 include <dnd_config.scad>
-include <Arena.scad>
-sbox = 1;
+x_box = 150;
+y_box = 110;
 
-module magnet_holder (h=0) {
+sbox = 1;
+ddice = 26;
+
+// Basic modules
+module magnet_holder () {
     translate([dmagnet/2+p_male + sbox, dmagnet/2+p_male + sbox, sbox])
-        cylinder(h=hmagnet + p_male + 0.01, d=dmagnet + p_male);
+        cylinder(h=hmagnet + p_male + 0.1, d=dmagnet + p_male);
 }
     
 module magnet_holder_top () {
@@ -54,7 +58,7 @@ module magnet_holder_top () {
     }
 }
 
-module vanilla_box(x,y,z) {
+module vanilla_box (x, y, z) {
     difference() {
         //cube([x,y,z]);
         minkowski() {
@@ -65,7 +69,7 @@ module vanilla_box(x,y,z) {
     }
 }
     
-module box(x, y, z, bottom = false) {
+module box (x, y, z, bottom = false) {
     difference() {
         union () {
             vanilla_box(x,y,z);
@@ -95,14 +99,18 @@ module box(x, y, z, bottom = false) {
                 magnet_holder_top();
         }
         union () {
-            translate([sbox, sbox, -sbox-hmagnet+p_male-0.01])
-                magnet_holder();
-            translate([sbox, y - 3*sbox - dmagnet - p_male, -sbox-hmagnet+p_male-0.01])
-                magnet_holder();
-            translate([x - 3*sbox - dmagnet - p_male, sbox, -sbox-hmagnet+p_male-0.01])
-                magnet_holder();
-            translate([x - 3*sbox - dmagnet - p_male, y - 3*sbox - dmagnet - p_male, -sbox-hmagnet+p_male-0.01])
-                magnet_holder();
+            //add guide if it's not the last box
+            if(!bottom) {
+                translate([sbox, sbox, -sbox-hmagnet+p_male-0.01])
+                    magnet_holder();
+                translate([sbox, y - 3*sbox - dmagnet - p_male, -sbox-hmagnet+p_male-0.01])
+                    magnet_holder();
+                translate([x - 3*sbox - dmagnet - p_male, sbox, -sbox-hmagnet+p_male-0.01])
+                    magnet_holder();
+                translate([x - 3*sbox - dmagnet - p_male, y - 3*sbox - dmagnet - p_male, -sbox-hmagnet+p_male-0.01])
+                    magnet_holder();
+                translate([-1, y/2-2.5, z-3+0.1]) cube([1.5,5,3]);
+            }
         }
     }
 }
@@ -114,99 +122,106 @@ module lit (x, y) {
             translate([sbox, sbox, sbox]) cube([x - 2*sbox ,y -  2*sbox , sbox]);
         }
         union () {
-            translate([sbox, sbox, sbox])
+            translate([sbox, sbox, sbox-(hmagnet + p_male)])
                 magnet_holder();
-            translate([sbox, y - 3*sbox - dmagnet - p_male, sbox])
+            translate([sbox, y - 3*sbox - dmagnet - p_male, sbox-(hmagnet + p_male)])
                 magnet_holder();
-            translate([x - 3*sbox - dmagnet - p_male, sbox, sbox])
+            translate([x - 3*sbox - dmagnet - p_male, sbox, sbox-(hmagnet + p_male)])
                 magnet_holder();
-            translate([x - 3*sbox - dmagnet - p_male, y - 3*sbox - dmagnet - p_male, sbox])
+            translate([x - 3*sbox - dmagnet - p_male, y - 3*sbox - dmagnet - p_male, sbox-(hmagnet + p_male)])
                 magnet_holder();
+            translate([x/2, y/2, 2*sbox - 0.5]) signature();
         }
     }
 }
 
-
-module pen_holder(x,y,z){
-    xc = x -2*sbox; 
-    yc = y -2*sbox;
-    zc = 2*z -2*sbox;
+// Advanced modules 
+module pen_holder (x, y, z){
+    xc = x - 2*sbox; 
+    yc = y - 2*sbox;
+    zc = 2*z - 2*sbox;
+    
+    rcurv = 3;
+    
     difference() {
         cube([x, y, z]);
-        translate([yc*0.3 + sbox,yc*0.3 + sbox, yc*0.3 + sbox])
-        minkowski() {
-            cube([xc-yc*0.6, yc*0.4, zc-yc*0.6]);
-            sphere(r=yc*0.3);
-        }
+        translate([rcurv + sbox, rcurv + sbox, rcurv + sbox])
+            minkowski() {
+                cube([xc - 2*rcurv, yc-2*rcurv, zc-rcurv]);
+                sphere(r=rcurv);
+            }
     }
-    
 }
-module connector_holder(y,z, n) {
+
+// Boxes
+module box_tools  (x, y) {
+    height = 22;
+    hf = 0.5;
+    n_pens = 4;
+    w_pens = 15;
+    box(x, y, height);
+    //pens
     difference() {
-        cube([rfield + 2*sbox,y,z]);
-        union() {
-            for (i = [0:n-1]){
-                 translate([rfield/2 +sbox,i * rfield/3 + sbox,sbox]) scale([1,1,z/dfield]) rotate([0,0,90]) 
-                    field_connector_w();
+        for (i = [0:n_pens - 1]){
+            translate([0, i*(w_pens-sbox), 0])
+            pen_holder(x, w_pens, height * hf);
+        }
+        translate([25, w_pens/2, height * hf * hf]) cube ([10, 40, 10]);
+    }  
+    
+    //dice
+    y_base = n_pens*(w_pens-sbox);
+    y_div = 1;
+    difference() {
+        translate([0, y_base, 0]) cube([x, 2*ddice + 2* sbox - y_div, height * hf]);
+        union() { 
+            // make a row with 4 dices
+            // fdfdfdfdf
+            // 5f+4d=x
+            filling4 = (x - 4*(ddice + 2*sbox)) / 5;
+            for (i = [0:3]){
+                translate([(i+1) * filling4 + i * (ddice + 2*sbox) + ddice/2 + sbox, 2+y_base + ddice/2 + sbox, 0])
+                cylinder(d=ddice, h=height+0.01, center=false);
             }
             
-            translate([(rfield + 2*sbox - 5)/2,sbox,sbox]) cube([5,y - 2* sbox,z]);
-        }
-    }
-}
-
-module dice_holder (y, z) {
-    ddice = 20;
-    xdelta = (2*ddice + sbox) * sin(60) * sin(60);
-    echo(xdelta);
-    difference() {
-        cube([3*xdelta + ddice/2 - 2*sbox,y,z]);
-        translate([ddice/2+sbox, ddice/2+sbox, 0])
-        union() {
-            for (i = [0:2]) {
-                translate([i*xdelta, 0, 0]) cylinder(d=20, h=z+0.01);
-                translate([(i+0.5)*xdelta, y-ddice-2*sbox, 0]) cylinder(d=20, h=z+0.01);
+            // make a row with 3 dices
+            // FdfdfdF
+            // 3d+2f+2F=x
+            filling3 = (x - 3*(ddice + 2*sbox) - 2 * filling4) / 2;
+            for (i = [0:2]){
+                translate([filling3 + i * (filling4 + ddice + 2*sbox) + ddice/2 + sbox, 2+y_base + ddice/2 - sbox + ddice - y_div, height*hf])
+                //cylinder(d=ddice, h=height+0.01, center=false);
+                scale([1,1,height/ddice])
+                sphere(d=ddice);
             }
         }
-    }    
-}
-    
-module box_figure (x, y) {
-    //TODO
-}
-
-module box_area (x, y) {
-    //TODO
-}
-
-module box_tools (x, y) {
-    toolheight = 10;
-    box(x, y, 25);
-            
-    // Pen stuff
-    difference() {
-        union() {
-            translate([sbox,sbox,sbox])
-                pen_holder(x -2*sbox, 15, toolheight);
-            translate([sbox,15,sbox])
-                pen_holder(x -2*sbox, 15, toolheight);
-        }
-        translate([sbox + 20, 15-0.5*sbox, 5]) cube([20, 2*sbox, y*0.7]);
     }
-    
-    // Connector stuff
-    translate([sbox, 2*15, sbox])connector_holder(y-2*15-sbox,toolheight,$preview ? 2 : 6);
-    
-    //Dice stuff
-    translate([rfield + 2*sbox, 2*15, sbox])dice_holder(y-2*15-sbox, toolheight);
 }
 
+module box_notes  (x, y) {
+    height = 35;
+    box(x, y, height);
+}
+module box_minies (x, y) {
+    height = 15;
+    box(x, y, height);
+    
+    // TODO:
+    // - bases for minies (see include <Arena.scad>)
+}
 
-xs = arena_size_x(13);
-ys = arena_size_y(3);
-echo(xs, ys);
-//box_tools(xs, ys);
-//magnet_holder_top();
+//lit(x_box, y_box);
+//box_tools(x_box, y_box); 
+box_notes(x_box, y_box);
+//box_minies(x_box, y_box);
 
-//box(30, 15, 15);
-
+// Box: 11x15cm
+// x lit
+// x Tools:  Stifte, Dices
+// x Notes:  Notes, Quizes
+// - Minies: Minies
+// - Time:  Hourglass
+// - 
+// - 
+// - 
+// - 

@@ -1,5 +1,11 @@
 $fn = $preview ? 16 : 128;
 
+//use <SourceCodePro.ttf>
+//font = "Source Code Pro";
+
+use <DejaVuSansMono.ttf>
+font = "DejaVu Sans Mono";
+
 rfield = 25;
 sfield = rfield * 0.05;
 dfield = rfield * 0.1;
@@ -35,4 +41,14 @@ module connector_w () {
         translate([0,0,-0.1])
             cylinder(d = rconnector - sconnector, h = dconnector + 0.2, $fn = 6);
     }
+}
+
+module signature () {
+    sign_h = 1;
+    icon_s = 15;
+    
+    linear_extrude(height = sign_h) text("Duda", valign = "center", halign = "center", font=font);
+    
+    //translate([0,2.5,0]) linear_extrude(height = sign_h) text("Duda", valign = "bottom", halign = "center", font=font);
+    //translate([0, icon_s / 2 - icon_s,0.5]) scale([icon_s/100, icon_s/100,0.1]) import("Quaoar.stl");
 }
